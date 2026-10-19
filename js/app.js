@@ -101,15 +101,19 @@ catBtn.addEventListener('keydown', e=>{
 document.addEventListener('visibilitychange', ()=>{
   if(!document.hidden) scheduleSleep();
 });
-// motion bob — respect reduced motion
+// motion bob via CSS — respect reduced motion, keep transform free for mobile centering
 const prefersReduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-if(!prefersReduced){
-  let t=0; function bob(){
-    if(state==='moving'){ t+=0.015; catBtn.style.transform='translateY('+(Math.sin(t)*3)+'px)'; }
-    else catBtn.style.transform='';
-    requestAnimationFrame(bob);
-  } requestAnimationFrame(bob);
+function syncIdle(){
+  if(!prefersReduced && state==='moving') catBtn.classList.add('idle');
+  else catBtn.classList.remove('idle');
 }
+// patch setState to sync idle class after state change
+const _setStateOrig = setState;
+setState = function(next, opts={}){
+  _setStateOrig(next, opts);
+  syncIdle();
+};
+syncIdle();
 scheduleSleep();
 // cleanup on page hide
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ clearTimeout(sleepTimer); clearTimeout(playTimer);} else scheduleSleep(); });
